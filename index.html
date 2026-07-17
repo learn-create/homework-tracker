@@ -13,7 +13,6 @@
       <div class="bg-white p-6 rounded-lg shadow-md">
         <h2 class="text-xl font-semibold mb-4">Log Event</h2>
         <form id="logForm" class="space-y-4">
-          <!-- THIS IS NOW A DROPDOWN -->
           <div>
             <label class="block text-sm font-medium text-gray-700">Student Name</label>
             <select id="student" required class="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white">
@@ -33,19 +32,18 @@
             <label class="block text-sm font-medium text-gray-700">Category</label>
             <select id="category" class="mt-1 block w-full border border-gray-300 rounded-md p-2">
               <optgroup label="Positive">
-                <option value="Maths Homework Winner">Maths Homework Winner (+1)</option>
-                <option value="Maths Homework Runner Ups">Maths Homework Runner Ups (+0.5)</option>
-                <option value="Writing Homework Winner">Writing Homework Winner (+1)</option>
-                <option value="Book Review Winner">Book Review Winner (+1)</option>
-                <option value="Book Review Test Highest Scores">Book Review Test Highest Scores (+1)</option>
+                <option value="Maths Homework Winner">🎉 Maths Homework Winner (+1)</option>
+                <option value="Maths Homework Runner Ups">🎉 Maths Homework Runner Ups (+0.5)</option>
+                <option value="Writing Homework Winner">🎉 Writing Homework Winner (+1)</option>
+                <option value="Book Review Winner">🎉 Book Review Winner (+1)</option>
+                <option value="Book Review Test Highest Scores">🎉 Book Review Test Highest Scores (+1)</option>
               </optgroup>
               <optgroup label="Negative">
-                <option value="Forgotten stationery (first-time)">Forgotten stationery (1st) (0)</option>
-                <option value="Forgotten stationery (second-time)">Forgotten stationery (2nd) (-0.5)</option>
-                <option value="No Maths Homework">No Maths Homework (-1)</option>
-                <option value="No Writing Homework">No Writing Homework (-1)</option>
-                <option value="No highlighting (first-time)">No highlighting (1st) (0)</option>
-                <option value="No highlighting (second-time)">No highlighting (2nd) (-0.5)</option>
+                <option value="Forgotten stationery">😭 Forgotten stationery (Auto-tracks 1st/2nd)</option>
+                <option value="No Maths Homework">😭 No Maths Homework (-1)</option>
+                <option value="No Writing Homework">😭 No Writing Homework (-1)</option>
+                <option value="No highlighting">😭 No highlighting (Auto-tracks 1st/2nd)</option>
+                <option value="Book Review Test Fail">😭 Book Review Test Fail (-1)</option>
               </optgroup>
             </select>
           </div>
@@ -70,17 +68,14 @@
         const res = await fetch(API_URL);
         const data = await res.json();
         
-        // Populate Student Dropdown
         const studentSelect = document.getElementById('student');
         if(data.students && data.students.length > 0){
-          // Keep the current selection if there is one
           const currentVal = studentSelect.value;
           studentSelect.innerHTML = '<option value="" disabled selected>Select a student...</option>' + 
             data.students.map(name => `<option value="${name}">${name}</option>`).join('');
           if(currentVal) studentSelect.value = currentVal;
         }
 
-        // Render Leaderboard
         const leaderboardEl = document.getElementById('leaderboard');
         const sortedTotals = Object.entries(data.totals).sort((a, b) => b[1] - a[1]);
         if (sortedTotals.length === 0) { leaderboardEl.innerHTML = '<p class="text-gray-500">No data yet.</p>'; } 
@@ -92,15 +87,16 @@
             </div>`).join('');
         }
 
-        // Render Logs
         const logsEl = document.getElementById('logs');
         if (data.logs.length === 0) { logsEl.innerHTML = '<p class="text-gray-500">No logs yet.</p>'; } 
         else {
           logsEl.innerHTML = data.logs.reverse().map(log => {
             const [ts, student, week, category, points] = log;
             const colorClass = parseFloat(points) < 0 ? 'text-red-500' : 'text-green-600';
+            // Add emoji based on points (0 or positive gets celebration, negative gets crying)
+            const emoji = parseFloat(points) <= 0 ? '😭' : '🎉';
             return `<div class="flex justify-between border-b border-gray-100 pb-2">
-              <div><span class="font-medium">${student}</span> - ${category} <span class="text-xs text-gray-400">(Week ${week})</span></div>
+              <div>${emoji} <span class="font-medium">${student}</span> - ${category} <span class="text-xs text-gray-400">(Week ${week})</span></div>
               <div class="${colorClass} font-semibold">${parseFloat(points) > 0 ? '+' : ''}${points}</div>
             </div>`;
           }).join('');
@@ -119,7 +115,7 @@
         if (res.ok) {
           messageEl.textContent = 'Log added successfully!';
           messageEl.classList.remove('hidden');
-          document.getElementById('logForm').reset(); // Resets the form
+          document.getElementById('logForm').reset();
           fetchData(); 
           setTimeout(() => messageEl.classList.add('hidden'), 3000);
         }
