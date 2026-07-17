@@ -7,10 +7,11 @@ const CATEGORIES = {
   "Book Review Winner": 1,
   "Book Review Test Highest Scores": 1,
   "Book Review Test Fail": -1,
-  "Forgotten stationery": 0, // We will calculate this dynamically below
+  "Forgotten stationery": 0,
+  "Forgot Writing Homework Folder": 0,
   "No Maths Homework": -1,
   "No Writing Homework": -1,
-  "No highlighting": 0 // We will calculate this dynamically below
+  "No highlighting": 0
 };
 
 exports.handler = async (event) => {
@@ -40,26 +41,50 @@ exports.handler = async (event) => {
     }
 
     if (event.httpMethod === 'POST') {
-      const { student, week, category } = JSON.parse(event.body);
-      let points = CATEGORIES[category];
-      let finalCategoryName = category;
-
-      // Auto-tracking logic for Forgotten Stationery and No Highlighting
-      if (category === "Forgotten stationery" || category === "No highlighting") {
-        // 1. Get all past logs to check how many times this has happened
+      const body = JSON.parse(event.body);
+      
+      // --- NEW: HANDLE RESET LOGIC ---
+      if (body.action === 'reset') {
+        const { student } = body;
         const historyResponse = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'Sheet1!A2:E' });
         const historyRows = historyResponse.data.values || [];
         
-        // 2. Count how many times this student has had this specific category before
+        // Calculate their current total
+        let currentTotal = 0;
+        historyRows.forEach(row => {
+          if (row[1] === student) {
+            currentTotal += parseFloat(row[4] || 0);
+          }
+        });
+
+        // Calculate the offset needed to bring them to exactly 0
+        const offsetPoints = currentTotal * -1; 
+
+        await sheets.spreadsheets.values.append({
+          spreadsheetId: sheetId, range: 'Sheet1!A:E', valueInputOption: 'USER_ENTERED',
+          requestBody: { values: [[new Date().toISOString(), student, 'N/A', 'Suspension Served - Reset to 0', offsetPoints]] },
+        });
+        
+        return { statusCode: 200, body: JSON.stringify({ message: 'Student reset successfully!' }) };
+      }
+
+      // --- NORMAL LOGIC ---
+      const { student, week, category } = body;
+      let points = CATEGORIES[category];
+      let finalCategoryName = category;
+
+      if (category === "Forgotten stationery" || category === "No highlighting" || category === "Forgot Writing Homework Folder") {
+        const historyResponse = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'Sheet1!A2:E' });
+        const historyRows = historyResponse.data.values || [];
+        
         const pastOccurrences = historyRows.filter(row => row[1] === student && row[3] && row[3].includes(category)).length;
         
-        // 3. Assign points and name based on history
         if (pastOccurrences === 0) {
           points = 0;
           finalCategoryName = `${category} (first-time)`;
         } else {
           points = -0.5;
-          finalCategoryName = `${category} (second-time)`;
+          finalCategoryName = `${category} (subsequent)`;
         }
       }
 
