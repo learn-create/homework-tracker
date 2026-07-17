@@ -1,6 +1,6 @@
 const { google } = require('googleapis');
 
-// Categories for Class 1
+// Categories for SL (formerly Class 1)
 const CATEGORIES_CLASS_1 = {
   "Maths Homework Winner": 1,
   "Maths Homework Runner Ups": 0.5,
@@ -15,7 +15,7 @@ const CATEGORIES_CLASS_1 = {
   "No highlighting": 0
 };
 
-// CATEGORIES FOR CLASS 2 & 3
+// CATEGORIES FOR MASTERY A & MASTERY B
 const CATEGORIES_OTHER = {
   "Writing HW Winner": 1,
   "Maths HW Winner": 1,
@@ -25,13 +25,12 @@ const CATEGORIES_OTHER = {
   "Poor HW quality": 0
 };
 
-// All categories that need auto-tracking (0 first time, -0.5 subsequent)
 const AUTO_TRACKED = [
   "Forgotten stationery", 
   "No highlighting", 
   "Forgot Writing Homework Folder",
-  "Forgetting stationery", // Added for Classes 2 & 3
-  "Poor HW quality"        // Added for Classes 2 & 3
+  "Forgetting stationery",
+  "Poor HW quality"
 ];
 
 exports.handler = async (event) => {
@@ -52,9 +51,9 @@ exports.handler = async (event) => {
       const s3 = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'Students3!A2:A' });
 
       const students = {
-        "Class 1": (s1.data.values || []).flat(),
-        "Class 2": (s2.data.values || []).flat(),
-        "Class 3": (s3.data.values || []).flat()
+        "SL": (s1.data.values || []).flat(),
+        "Mastery A": (s2.data.values || []).flat(),
+        "Mastery B": (s3.data.values || []).flat()
       };
 
       const studentTotals = {};
@@ -96,7 +95,7 @@ exports.handler = async (event) => {
 
       // --- NORMAL LOGIC ---
       const { student, week, category, className } = body;
-      const categorySet = className === "Class 1" ? CATEGORIES_CLASS_1 : CATEGORIES_OTHER;
+      const categorySet = className === "SL" ? CATEGORIES_CLASS_1 : CATEGORIES_OTHER;
       let points = categorySet[category];
       let finalCategoryName = category;
 
