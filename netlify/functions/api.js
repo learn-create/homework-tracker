@@ -24,15 +24,24 @@ exports.handler = async (event) => {
 
   try {
     if (event.httpMethod === 'GET') {
+      // 1. Fetch the homework logs
       const response = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'Sheet1!A2:E' });
       const rows = response.data.values || [];
+      
+      // 2. Fetch the student names from the Students tab
+      const studentsResponse = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'Students!A2:A' });
+      const students = (studentsResponse.data.values || []).flat(); // This turns the rows into a simple list
+
+      // 3. Calculate totals
       const studentTotals = {};
       rows.forEach(row => {
         const [timestamp, student, week, category, points] = row;
         if (!studentTotals[student]) studentTotals[student] = 0;
         studentTotals[student] += parseFloat(points || 0);
       });
-      return { statusCode: 200, body: JSON.stringify({ logs: rows, totals: studentTotals }) };
+      
+      // 4. Send both logs, totals, AND the student list to the frontend
+      return { statusCode: 200, body: JSON.stringify({ logs: rows, totals: studentTotals, students: students }) };
     }
 
     if (event.httpMethod === 'POST') {
