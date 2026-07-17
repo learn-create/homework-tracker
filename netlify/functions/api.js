@@ -6,12 +6,11 @@ const CATEGORIES = {
   "Writing Homework Winner": 1,
   "Book Review Winner": 1,
   "Book Review Test Highest Scores": 1,
-  "Forgotten stationery (first-time)": 0,
-  "Forgotten stationery (second-time)": -0.5,
+  "Book Review Test Fail": -1,
+  "Forgotten stationery": 0, // We will calculate this dynamically below
   "No Maths Homework": -1,
   "No Writing Homework": -1,
-  "No highlighting (first-time)": 0,
-  "No highlighting (second-time)": -0.5
+  "No highlighting": 0 // We will calculate this dynamically below
 };
 
 exports.handler = async (event) => {
@@ -24,15 +23,12 @@ exports.handler = async (event) => {
 
   try {
     if (event.httpMethod === 'GET') {
-      // 1. Fetch the homework logs
       const response = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'Sheet1!A2:E' });
       const rows = response.data.values || [];
       
-      // 2. Fetch the student names from the Students tab
       const studentsResponse = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'Students!A2:A' });
-      const students = (studentsResponse.data.values || []).flat(); // This turns the rows into a simple list
+      const students = (studentsResponse.data.values || []).flat();
 
-      // 3. Calculate totals
       const studentTotals = {};
       rows.forEach(row => {
         const [timestamp, student, week, category, points] = row;
@@ -40,16 +36,36 @@ exports.handler = async (event) => {
         studentTotals[student] += parseFloat(points || 0);
       });
       
-      // 4. Send both logs, totals, AND the student list to the frontend
       return { statusCode: 200, body: JSON.stringify({ logs: rows, totals: studentTotals, students: students }) };
     }
 
     if (event.httpMethod === 'POST') {
       const { student, week, category } = JSON.parse(event.body);
-      const points = CATEGORIES[category];
+      let points = CATEGORIES[category];
+      let finalCategoryName = category;
+
+      // Auto-tracking logic for Forgotten Stationery and No Highlighting
+      if (category === "Forgotten stationery" || category === "No highlighting") {
+        // 1. Get all past logs to check how many times this has happened
+        const historyResponse = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'Sheet1!A2:E' });
+        const historyRows = historyResponse.data.values || [];
+        
+        // 2. Count how many times this student has had this specific category before
+        const pastOccurrences = historyRows.filter(row => row[1] === student && row[3] && row[3].includes(category)).length;
+        
+        // 3. Assign points and name based on history
+        if (pastOccurrences === 0) {
+          points = 0;
+          finalCategoryName = `${category} (first-time)`;
+        } else {
+          points = -0.5;
+          finalCategoryName = `${category} (second-time)`;
+        }
+      }
+
       await sheets.spreadsheets.values.append({
         spreadsheetId: sheetId, range: 'Sheet1!A:E', valueInputOption: 'USER_ENTERED',
-        requestBody: { values: [[new Date().toISOString(), student, week, category, points]] },
+        requestBody: { values: [[new Date().toISOString(), student, week, finalCategoryName, points]] },
       });
       return { statusCode: 200, body: JSON.stringify({ message: 'Log added successfully!' }) };
     }
