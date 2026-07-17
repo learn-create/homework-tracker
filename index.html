@@ -14,9 +14,9 @@
     <div class="mb-6 bg-white p-4 rounded-lg shadow-md flex items-center gap-4">
       <label class="font-semibold text-gray-700">Select Class:</label>
       <select id="classSelector" class="border border-gray-300 rounded-md p-2 bg-white">
-        <option value="Class 1">Class 1</option>
-        <option value="Class 2">Class 2</option>
-        <option value="Class 3">Class 3</option>
+        <option value="SL">SL</option>
+        <option value="Mastery A">Mastery A</option>
+        <option value="Mastery B">Mastery B</option>
       </select>
     </div>
 
@@ -59,7 +59,7 @@
   </div>
   <script>
     const API_URL = '/.netlify/functions/api';
-    let currentClass = "Class 1";
+    let currentClass = "SL";
     let globalData = null;
 
     // CATEGORY LISTS FOR FRONTEND
@@ -71,8 +71,8 @@
 
     function renderCategories() {
       const catSelect = document.getElementById('category');
-      let pos = currentClass === "Class 1" ? POSITIVE_C1 : POSITIVE_OTHER;
-      let neg = currentClass === "Class 1" ? NEGATIVE_C1 : NEGATIVE_OTHER;
+      let pos = currentClass === "SL" ? POSITIVE_C1 : POSITIVE_OTHER;
+      let neg = currentClass === "SL" ? NEGATIVE_C1 : NEGATIVE_OTHER;
 
       let html = '<optgroup label="Positive">';
       pos.forEach(c => html += `<option value="${c}">🎉 ${c}</option>`);
@@ -184,7 +184,7 @@
           messageEl.textContent = 'Log added successfully!';
           messageEl.classList.remove('hidden');
           document.getElementById('logForm').reset();
-          renderCategories(); // re-render categories since form reset clears them
+          renderCategories(); 
           fetchData(); 
           setTimeout(() => messageEl.classList.add('hidden'), 3000);
         }
