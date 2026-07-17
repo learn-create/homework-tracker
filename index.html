@@ -9,6 +9,17 @@
 <body class="bg-gray-100 p-8 font-sans">
   <div class="max-w-4xl mx-auto">
     <h1 class="text-3xl font-bold mb-6 text-gray-800">10-Week Homework Tracker</h1>
+    
+    <!-- CLASS SELECTOR -->
+    <div class="mb-6 bg-white p-4 rounded-lg shadow-md flex items-center gap-4">
+      <label class="font-semibold text-gray-700">Select Class:</label>
+      <select id="classSelector" class="border border-gray-300 rounded-md p-2 bg-white">
+        <option value="Class 1">Class 1</option>
+        <option value="Class 2">Class 2</option>
+        <option value="Class 3">Class 3</option>
+      </select>
+    </div>
+
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div class="bg-white p-6 rounded-lg shadow-md">
         <h2 class="text-xl font-semibold mb-4">Log Event</h2>
@@ -30,23 +41,7 @@
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700">Category</label>
-            <select id="category" class="mt-1 block w-full border border-gray-300 rounded-md p-2">
-              <optgroup label="Positive">
-                <option value="Maths Homework Winner">🎉 Maths Homework Winner (+1)</option>
-                <option value="Maths Homework Runner Ups">🎉 Maths Homework Runner Ups (+0.5)</option>
-                <option value="Writing Homework Winner">🎉 Writing Homework Winner (+1)</option>
-                <option value="Book Review Winner">🎉 Book Review Winner (+1)</option>
-                <option value="Book Review Test Highest Scores">🎉 Book Review Test Highest Scores (+1)</option>
-              </optgroup>
-              <optgroup label="Negative">
-                <option value="Forgotten stationery">😭 Forgotten stationery (Auto-tracks 1st/subsequent)</option>
-                <option value="Forgot Writing Homework Folder">😭 Forgot Writing Homework Folder (Auto-tracks 1st/subsequent)</option>
-                <option value="No Maths Homework">😭 No Maths Homework (-1)</option>
-                <option value="No Writing Homework">😭 No Writing Homework (-1)</option>
-                <option value="No highlighting">😭 No highlighting (Auto-tracks 1st/subsequent)</option>
-                <option value="Book Review Test Fail">😭 Book Review Test Fail (-1)</option>
-              </optgroup>
-            </select>
+            <select id="category" class="mt-1 block w-full border border-gray-300 rounded-md p-2"></select>
           </div>
           <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">Submit Log</button>
         </form>
@@ -64,79 +59,114 @@
   </div>
   <script>
     const API_URL = '/.netlify/functions/api';
+    let currentClass = "Class 1";
+    let globalData = null;
+
+    // CATEGORY LISTS FOR FRONTEND
+    const POSITIVE_C1 = ["Maths Homework Winner", "Maths Homework Runner Ups", "Writing Homework Winner", "Book Review Winner", "Book Review Test Highest Scores"];
+    const NEGATIVE_C1 = ["Forgotten stationery", "Forgot Writing Homework Folder", "No Maths Homework", "No Writing Homework", "No highlighting", "Book Review Test Fail"];
+    
+    const POSITIVE_OTHER = ["Writing HW Winner", "Maths HW Winner"];
+    const NEGATIVE_OTHER = ["Non-submission of writing HW", "Non-submission of maths HW", "Forgetting stationery", "Poor HW quality"];
+
+    function renderCategories() {
+      const catSelect = document.getElementById('category');
+      let pos = currentClass === "Class 1" ? POSITIVE_C1 : POSITIVE_OTHER;
+      let neg = currentClass === "Class 1" ? NEGATIVE_C1 : NEGATIVE_OTHER;
+
+      let html = '<optgroup label="Positive">';
+      pos.forEach(c => html += `<option value="${c}">🎉 ${c}</option>`);
+      html += '</optgroup><optgroup label="Negative">';
+      neg.forEach(c => html += `<option value="${c}">😭 ${c}</option>`);
+      html += '</optgroup>';
+      
+      catSelect.innerHTML = html;
+    }
+
+    function renderUI() {
+      if (!globalData) return;
+      
+      // Populate Students
+      const studentSelect = document.getElementById('student');
+      const currentVal = studentSelect.value;
+      studentSelect.innerHTML = '<option value="" disabled selected>Select a student...</option>' + 
+        (globalData.students[currentClass] || []).map(name => `<option value="${name}">${name}</option>`).join('');
+      if(currentVal) studentSelect.value = currentVal;
+
+      // Leaderboard
+      const leaderboardEl = document.getElementById('leaderboard');
+      const classTotals = globalData.totals[currentClass] || {};
+      const sortedTotals = Object.entries(classTotals).sort((a, b) => b[1] - a[1]);
+      
+      if (sortedTotals.length === 0) { 
+        leaderboardEl.innerHTML = '<p class="text-gray-500">No data yet for this class.</p>'; 
+      } else {
+        leaderboardEl.innerHTML = sortedTotals.map(([student, points], index) => {
+          const numPoints = parseFloat(points);
+          let alertBadge = '';
+          let bgClass = 'bg-gray-50';
+          
+          if (numPoints <= -3) {
+            alertBadge = ` <span class="text-white font-bold text-xs bg-red-600 px-2 py-1 rounded ml-2 animate-pulse">SUSPENSION</span> <button onclick="resetStudent('${student}')" class="ml-2 text-xs bg-gray-800 text-white px-2 py-1 rounded hover:bg-black">Clear to 0</button>`;
+            bgClass = 'bg-red-100 border border-red-300';
+          } else if (numPoints <= -2) {
+            alertBadge = ' <span class="text-white font-bold text-xs bg-orange-500 px-2 py-1 rounded ml-2 animate-pulse">CLOSE TO SUSPENSION</span>';
+            bgClass = 'bg-orange-100 border border-orange-300';
+          }
+
+          return `
+            <div class="flex justify-between items-center p-2 rounded ${bgClass}">
+              <span class="font-medium text-gray-800">${index + 1}. ${student}${alertBadge}</span>
+              <span class="font-bold ${numPoints < 0 ? 'text-red-600' : 'text-green-600'} text-lg">${numPoints}</span>
+            </div>`;
+        }).join('');
+      }
+
+      // Logs
+      const logsEl = document.getElementById('logs');
+      const classLogs = globalData.logs.filter(log => log[1] === currentClass);
+      if (classLogs.length === 0) { logsEl.innerHTML = '<p class="text-gray-500">No logs yet for this class.</p>'; } 
+      else {
+        logsEl.innerHTML = classLogs.reverse().map(log => {
+          const [ts, className, student, week, category, points] = log;
+          const colorClass = parseFloat(points) < 0 ? 'text-red-500' : 'text-green-600';
+          const emoji = parseFloat(points) < 0 ? '😭' : '🎉';
+          const finalEmoji = parseFloat(points) === 0 ? '😐' : emoji;
+          return `<div class="flex justify-between border-b border-gray-100 pb-2">
+            <div>${finalEmoji} <span class="font-medium">${student}</span> - ${category} <span class="text-xs text-gray-400">(Week ${week})</span></div>
+            <div class="${colorClass} font-semibold">${parseFloat(points) > 0 ? '+' : ''}${points}</div>
+          </div>`;
+        }).join('');
+      }
+    }
+
     async function fetchData() {
       try {
         const res = await fetch(API_URL);
-        const data = await res.json();
-        
-        const studentSelect = document.getElementById('student');
-        if(data.students && data.students.length > 0){
-          const currentVal = studentSelect.value;
-          studentSelect.innerHTML = '<option value="" disabled selected>Select a student...</option>' + 
-            data.students.map(name => `<option value="${name}">${name}</option>`).join('');
-          if(currentVal) studentSelect.value = currentVal;
-        }
-
-        const leaderboardEl = document.getElementById('leaderboard');
-        const sortedTotals = Object.entries(data.totals).sort((a, b) => b[1] - a[1]);
-        
-        if (sortedTotals.length === 0) { 
-          leaderboardEl.innerHTML = '<p class="text-gray-500">No data yet.</p>'; 
-        } else {
-          leaderboardEl.innerHTML = sortedTotals.map(([student, points], index) => {
-            const numPoints = parseFloat(points);
-            let alertBadge = '';
-            let bgClass = 'bg-gray-50';
-            
-            // Suspension Alerts & Reset Button
-            if (numPoints <= -3) {
-              alertBadge = ` <span class="text-white font-bold text-xs bg-red-600 px-2 py-1 rounded ml-2 animate-pulse">SUSPENSION</span> <button onclick="resetStudent('${student}')" class="ml-2 text-xs bg-gray-800 text-white px-2 py-1 rounded hover:bg-black">Clear to 0</button>`;
-              bgClass = 'bg-red-100 border border-red-300';
-            } else if (numPoints <= -2) {
-              alertBadge = ' <span class="text-white font-bold text-xs bg-orange-500 px-2 py-1 rounded ml-2 animate-pulse">CLOSE TO SUSPENSION</span>';
-              bgClass = 'bg-orange-100 border border-orange-300';
-            }
-
-            return `
-              <div class="flex justify-between items-center p-2 rounded ${bgClass}">
-                <span class="font-medium text-gray-800">${index + 1}. ${student}${alertBadge}</span>
-                <span class="font-bold ${numPoints < 0 ? 'text-red-600' : 'text-green-600'} text-lg">${numPoints}</span>
-              </div>`;
-          }).join('');
-        }
-
-        const logsEl = document.getElementById('logs');
-        if (data.logs.length === 0) { logsEl.innerHTML = '<p class="text-gray-500">No logs yet.</p>'; } 
-        else {
-          logsEl.innerHTML = data.logs.reverse().map(log => {
-            const [ts, student, week, category, points] = log;
-            const colorClass = parseFloat(points) < 0 ? 'text-red-500' : 'text-green-600';
-            const emoji = parseFloat(points) < 0 ? '😭' : '🎉';
-            const finalEmoji = parseFloat(points) === 0 ? '😐' : emoji;
-            return `<div class="flex justify-between border-b border-gray-100 pb-2">
-              <div>${finalEmoji} <span class="font-medium">${student}</span> - ${category} <span class="text-xs text-gray-400">(Week ${week})</span></div>
-              <div class="${colorClass} font-semibold">${parseFloat(points) > 0 ? '+' : ''}${points}</div>
-            </div>`;
-          }).join('');
-        }
+        globalData = await res.json();
+        renderUI();
       } catch (error) { console.error('Error fetching data:', error); }
     }
 
-    // NEW: Function to handle resetting a student
     async function resetStudent(student) {
-      if(confirm(`Are you sure you want to reset ${student}'s score to 0? This will log a "Suspension Served" entry.`)) {
+      if(confirm(`Are you sure you want to reset ${student}'s score to 0 in ${currentClass}?`)) {
         try {
           await fetch(API_URL, { 
             method: 'POST', 
-            body: JSON.stringify({ action: 'reset', student: student }), 
+            body: JSON.stringify({ action: 'reset', student: student, className: currentClass }), 
             headers: { 'Content-Type': 'application/json' } 
           });
-          fetchData(); // Refresh data instantly
-        } catch (error) { 
-          alert('Error resetting student.'); 
-        }
+          fetchData(); 
+        } catch (error) { alert('Error resetting student.'); }
       }
     }
+
+    // Class Selector Listener
+    document.getElementById('classSelector').addEventListener('change', (e) => {
+      currentClass = e.target.value;
+      renderCategories();
+      renderUI();
+    });
 
     document.getElementById('logForm').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -145,17 +175,24 @@
       const category = document.getElementById('category').value;
       const messageEl = document.getElementById('formMessage');
       try {
-        const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ student, week, category }), headers: { 'Content-Type': 'application/json' } });
+        const res = await fetch(API_URL, { 
+          method: 'POST', 
+          body: JSON.stringify({ student, week, category, className: currentClass }), 
+          headers: { 'Content-Type': 'application/json' } 
+        });
         if (res.ok) {
           messageEl.textContent = 'Log added successfully!';
           messageEl.classList.remove('hidden');
           document.getElementById('logForm').reset();
+          renderCategories(); // re-render categories since form reset clears them
           fetchData(); 
           setTimeout(() => messageEl.classList.add('hidden'), 3000);
         }
       } catch (error) { messageEl.textContent = 'Error adding log.'; messageEl.classList.remove('hidden'); }
     });
 
+    // Initial Load
+    renderCategories();
     fetchData();
     setInterval(fetchData, 10000);
   </script>
