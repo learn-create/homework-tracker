@@ -13,9 +13,12 @@
       <div class="bg-white p-6 rounded-lg shadow-md">
         <h2 class="text-xl font-semibold mb-4">Log Event</h2>
         <form id="logForm" class="space-y-4">
+          <!-- THIS IS NOW A DROPDOWN -->
           <div>
             <label class="block text-sm font-medium text-gray-700">Student Name</label>
-            <input type="text" id="student" required class="mt-1 block w-full border border-gray-300 rounded-md p-2">
+            <select id="student" required class="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white">
+              <option value="" disabled selected>Loading students...</option>
+            </select>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700">Week</label>
@@ -66,6 +69,18 @@
       try {
         const res = await fetch(API_URL);
         const data = await res.json();
+        
+        // Populate Student Dropdown
+        const studentSelect = document.getElementById('student');
+        if(data.students && data.students.length > 0){
+          // Keep the current selection if there is one
+          const currentVal = studentSelect.value;
+          studentSelect.innerHTML = '<option value="" disabled selected>Select a student...</option>' + 
+            data.students.map(name => `<option value="${name}">${name}</option>`).join('');
+          if(currentVal) studentSelect.value = currentVal;
+        }
+
+        // Render Leaderboard
         const leaderboardEl = document.getElementById('leaderboard');
         const sortedTotals = Object.entries(data.totals).sort((a, b) => b[1] - a[1]);
         if (sortedTotals.length === 0) { leaderboardEl.innerHTML = '<p class="text-gray-500">No data yet.</p>'; } 
@@ -76,6 +91,8 @@
               <span class="font-bold ${points < 0 ? 'text-red-500' : 'text-green-600'}">${points}</span>
             </div>`).join('');
         }
+
+        // Render Logs
         const logsEl = document.getElementById('logs');
         if (data.logs.length === 0) { logsEl.innerHTML = '<p class="text-gray-500">No logs yet.</p>'; } 
         else {
@@ -90,6 +107,7 @@
         }
       } catch (error) { console.error('Error fetching data:', error); }
     }
+
     document.getElementById('logForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const student = document.getElementById('student').value;
@@ -101,12 +119,13 @@
         if (res.ok) {
           messageEl.textContent = 'Log added successfully!';
           messageEl.classList.remove('hidden');
-          document.getElementById('student').value = '';
+          document.getElementById('logForm').reset(); // Resets the form
           fetchData(); 
           setTimeout(() => messageEl.classList.add('hidden'), 3000);
         }
       } catch (error) { messageEl.textContent = 'Error adding log.'; messageEl.classList.remove('hidden'); }
     });
+
     fetchData();
     setInterval(fetchData, 10000);
   </script>
