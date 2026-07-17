@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Homework Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8 font-sans">
+  <div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6 text-gray-800">10-Week Homework Tracker</h1>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-semibold mb-4">Log Event</h2>
+        <form id="logForm" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Student Name</label>
+            <input type="text" id="student" required class="mt-1 block w-full border border-gray-300 rounded-md p-2">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Week</label>
+            <select id="week" class="mt-1 block w-full border border-gray-300 rounded-md p-2">
+              <option value="1">Week 1</option><option value="2">Week 2</option><option value="3">Week 3</option>
+              <option value="4">Week 4</option><option value="5">Week 5</option><option value="6">Week 6</option>
+              <option value="7">Week 7</option><option value="8">Week 8</option><option value="9">Week 9</option>
+              <option value="10">Week 10</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Category</label>
+            <select id="category" class="mt-1 block w-full border border-gray-300 rounded-md p-2">
+              <optgroup label="Positive">
+                <option value="Maths Homework Winner">Maths Homework Winner (+1)</option>
+                <option value="Maths Homework Runner Ups">Maths Homework Runner Ups (+0.5)</option>
+                <option value="Writing Homework Winner">Writing Homework Winner (+1)</option>
+                <option value="Book Review Winner">Book Review Winner (+1)</option>
+                <option value="Book Review Test Highest Scores">Book Review Test Highest Scores (+1)</option>
+              </optgroup>
+              <optgroup label="Negative">
+                <option value="Forgotten stationery (first-time)">Forgotten stationery (1st) (0)</option>
+                <option value="Forgotten stationery (second-time)">Forgotten stationery (2nd) (-0.5)</option>
+                <option value="No Maths Homework">No Maths Homework (-1)</option>
+                <option value="No Writing Homework">No Writing Homework (-1)</option>
+                <option value="No highlighting (first-time)">No highlighting (1st) (0)</option>
+                <option value="No highlighting (second-time)">No highlighting (2nd) (-0.5)</option>
+              </optgroup>
+            </select>
+          </div>
+          <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">Submit Log</button>
+        </form>
+        <div id="formMessage" class="mt-4 text-green-600 font-medium hidden"></div>
+      </div>
+      <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-semibold mb-4">Live Leaderboard</h2>
+        <div id="leaderboard" class="space-y-2"><p class="text-gray-500">Loading data...</p></div>
+      </div>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-md mt-6">
+      <h2 class="text-xl font-semibold mb-4">Recent Activity</h2>
+      <div id="logs" class="space-y-2 max-h-96 overflow-y-auto"><p class="text-gray-500">Loading data...</p></div>
+    </div>
+  </div>
+  <script>
+    const API_URL = '/.netlify/functions/api';
+    async function fetchData() {
+      try {
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        const leaderboardEl = document.getElementById('leaderboard');
+        const sortedTotals = Object.entries(data.totals).sort((a, b) => b[1] - a[1]);
+        if (sortedTotals.length === 0) { leaderboardEl.innerHTML = '<p class="text-gray-500">No data yet.</p>'; } 
+        else {
+          leaderboardEl.innerHTML = sortedTotals.map(([student, points], index) => `
+            <div class="flex justify-between items-center bg-gray-50 p-2 rounded">
+              <span class="font-medium text-gray-800">${index + 1}. ${student}</span>
+              <span class="font-bold ${points < 0 ? 'text-red-500' : 'text-green-600'}">${points}</span>
+            </div>`).join('');
+        }
+        const logsEl = document.getElementById('logs');
+        if (data.logs.length === 0) { logsEl.innerHTML = '<p class="text-gray-500">No logs yet.</p>'; } 
+        else {
+          logsEl.innerHTML = data.logs.reverse().map(log => {
+            const [ts, student, week, category, points] = log;
+            const colorClass = parseFloat(points) < 0 ? 'text-red-500' : 'text-green-600';
+            return `<div class="flex justify-between border-b border-gray-100 pb-2">
+              <div><span class="font-medium">${student}</span> - ${category} <span class="text-xs text-gray-400">(Week ${week})</span></div>
+              <div class="${colorClass} font-semibold">${parseFloat(points) > 0 ? '+' : ''}${points}</div>
+            </div>`;
+          }).join('');
+        }
+      } catch (error) { console.error('Error fetching data:', error); }
+    }
+    document.getElementById('logForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const student = document.getElementById('student').value;
+      const week = document.getElementById('week').value;
+      const category = document.getElementById('category').value;
+      const messageEl = document.getElementById('formMessage');
+      try {
+        const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ student, week, category }), headers: { 'Content-Type': 'application/json' } });
+        if (res.ok) {
+          messageEl.textContent = 'Log added successfully!';
+          messageEl.classList.remove('hidden');
+          document.getElementById('student').value = '';
+          fetchData(); 
+          setTimeout(() => messageEl.classList.add('hidden'), 3000);
+        }
+      } catch (error) { messageEl.textContent = 'Error adding log.'; messageEl.classList.remove('hidden'); }
+    });
+    fetchData();
+    setInterval(fetchData, 10000);
+  </script>
+</body>
+</html>
