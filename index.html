@@ -52,8 +52,10 @@
         <div id="leaderboard" class="space-y-2"><p class="text-gray-500">Loading data...</p></div>
       </div>
     </div>
+    
+    <!-- STUDENT SUMMARIES -->
     <div class="bg-white p-6 rounded-lg shadow-md mt-6">
-      <h2 class="text-xl font-semibold mb-4">Recent Activity</h2>
+      <h2 class="text-xl font-semibold mb-4">Student Activity Summaries</h2>
       <div id="logs" class="space-y-2 max-h-96 overflow-y-auto"><p class="text-gray-500">Loading data...</p></div>
     </div>
   </div>
@@ -62,8 +64,8 @@
     let currentClass = "SL";
     let globalData = null;
 
-    // CATEGORY LISTS FOR FRONTEND
-    const POSITIVE_C1 = ["Maths Homework Winner", "Maths Homework Runner Ups", "Writing Homework Winner", "Book Review Winner", "Book Review Test Highest Scores"];
+    // CATEGORY LISTS FOR FRONTEND (Added Book Review Runner Up to SL)
+    const POSITIVE_C1 = ["Maths Homework Winner", "Maths Homework Runner Ups", "Writing Homework Winner", "Book Review Winner", "Book Review Runner Up", "Book Review Test Highest Scores"];
     const NEGATIVE_C1 = ["Forgotten stationery", "Forgot Writing Homework Folder", "No Maths Homework", "No Writing Homework", "No highlighting", "Book Review Test Fail"];
     
     const POSITIVE_OTHER = ["Writing HW Winner", "Maths HW Winner"];
@@ -96,7 +98,14 @@
       // Leaderboard
       const leaderboardEl = document.getElementById('leaderboard');
       const classTotals = globalData.totals[currentClass] || {};
-      const sortedTotals = Object.entries(classTotals).sort((a, b) => b[1] - a[1]);
+      
+      // SORT: First by Score (descending), then by Name (alphabetically)
+      const sortedTotals = Object.entries(classTotals).sort((a, b) => {
+        if (parseFloat(b[1]) !== parseFloat(a[1])) {
+          return parseFloat(b[1]) - parseFloat(a[1]);
+        }
+        return a[0].localeCompare(b[0]);
+      });
       
       if (sortedTotals.length === 0) { 
         leaderboardEl.innerHTML = '<p class="text-gray-500">No data yet for this class.</p>'; 
@@ -122,20 +131,50 @@
         }).join('');
       }
 
-      // Logs
+      // Student Summary Dropdowns
       const logsEl = document.getElementById('logs');
       const classLogs = globalData.logs.filter(log => log[1] === currentClass);
-      if (classLogs.length === 0) { logsEl.innerHTML = '<p class="text-gray-500">No logs yet for this class.</p>'; } 
-      else {
-        logsEl.innerHTML = classLogs.reverse().map(log => {
-          const [ts, className, student, week, category, points] = log;
-          const colorClass = parseFloat(points) < 0 ? 'text-red-500' : 'text-green-600';
-          const emoji = parseFloat(points) < 0 ? '😭' : '🎉';
-          const finalEmoji = parseFloat(points) === 0 ? '😐' : emoji;
-          return `<div class="flex justify-between border-b border-gray-100 pb-2">
-            <div>${finalEmoji} <span class="font-medium">${student}</span> - ${category} <span class="text-xs text-gray-400">(Week ${week})</span></div>
-            <div class="${colorClass} font-semibold">${parseFloat(points) > 0 ? '+' : ''}${points}</div>
-          </div>`;
+      
+      if (classLogs.length === 0) { 
+        logsEl.innerHTML = '<p class="text-gray-500">No logs yet for this class.</p>'; 
+      } else {
+        // Group logs by student
+        const studentLogs = {};
+        classLogs.forEach(log => {
+          const student = log[2];
+          if (!studentLogs[student]) studentLogs[student] = [];
+          studentLogs[student].push(log);
+        });
+
+        // Get students sorted alphabetically
+        const sortedStudents = Object.keys(studentLogs).sort((a, b) => a.localeCompare(b));
+
+        logsEl.innerHTML = sortedStudents.map(student => {
+          const logs = studentLogs[student];
+          const studentTotal = classTotals[student] ? parseFloat(classTotals[student]) : 0;
+          
+          const logItems = logs.reverse().map(log => {
+            const [ts, className, studentName, week, category, points] = log;
+            const pts = parseFloat(points);
+            const colorClass = pts < 0 ? 'text-red-500' : 'text-green-600';
+            const emoji = pts < 0 ? '😭' : (pts === 0 ? '😐' : '🎉');
+            return `
+              <div class="flex justify-between text-sm py-1 border-b border-gray-100 last:border-0">
+                <div>${emoji} ${category} <span class="text-xs text-gray-400">(Wk ${week})</span></div>
+                <div class="${colorClass} font-semibold">${pts > 0 ? '+' : ''}${points}</div>
+              </div>`;
+          }).join('');
+
+          return `
+            <details class="bg-gray-50 p-3 rounded mb-2 cursor-pointer hover:bg-gray-100 transition-colors">
+              <summary class="font-medium text-gray-800 flex justify-between items-center list-none">
+                <span>${student}</span>
+                <span class="font-bold ${studentTotal < 0 ? 'text-red-600' : 'text-green-600'}">${studentTotal} pts</span>
+              </summary>
+              <div class="mt-2 pl-4 border-l-2 border-gray-200 ml-2">
+                ${logItems}
+              </div>
+            </details>`;
         }).join('');
       }
     }
