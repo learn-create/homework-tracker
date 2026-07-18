@@ -64,11 +64,25 @@
     let currentClass = "SL";
     let globalData = null;
 
-    // CATEGORY LISTS FOR FRONTEND (Added Book Review Runner Up to SL)
-    const POSITIVE_C1 = ["Maths Homework Winner", "Maths Homework Runner Ups", "Writing Homework Winner", "Book Review Winner", "Book Review Runner Up", "Book Review Test Highest Scores"];
+    // CATEGORY LISTS FOR FRONTEND
+    const POSITIVE_C1 = [
+      "Maths Homework Winner", 
+      "Maths Homework Runner Ups", 
+      "Writing Homework Winner", 
+      "Book Review Winner", 
+      "Book Review Runner Up", 
+      "Book Review Test Highest Scores",
+      "Best behaviour (Maths)", // NEW
+      "Best behaviour (English)" // NEW
+    ];
     const NEGATIVE_C1 = ["Forgotten stationery", "Forgot Writing Homework Folder", "No Maths Homework", "No Writing Homework", "No highlighting", "Book Review Test Fail"];
     
-    const POSITIVE_OTHER = ["Writing HW Winner", "Maths HW Winner"];
+    const POSITIVE_OTHER = [
+      "Writing HW Winner", 
+      "Maths HW Winner",
+      "Best behaviour (Maths)", // NEW
+      "Best behaviour (English)" // NEW
+    ];
     const NEGATIVE_OTHER = ["Non-submission of writing HW", "Non-submission of maths HW", "Forgetting stationery", "Poor HW quality"];
 
     function renderCategories() {
