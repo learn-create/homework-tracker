@@ -1,11 +1,12 @@
 const { google } = require('googleapis');
 
-// Categories for SL (formerly Class 1)
+// Categories for SL
 const CATEGORIES_CLASS_1 = {
   "Maths Homework Winner": 1,
   "Maths Homework Runner Ups": 0.5,
   "Writing Homework Winner": 1,
   "Book Review Winner": 1,
+  "Book Review Runner Up": 0.5, // NEW CATEGORY
   "Book Review Test Highest Scores": 1,
   "Book Review Test Fail": -1,
   "Forgotten stationery": 0,
@@ -71,7 +72,6 @@ exports.handler = async (event) => {
     if (event.httpMethod === 'POST') {
       const body = JSON.parse(event.body);
       
-      // --- HANDLE RESET LOGIC ---
       if (body.action === 'reset') {
         const { student, className } = body;
         const historyResponse = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'Sheet1!A2:F' });
@@ -93,7 +93,6 @@ exports.handler = async (event) => {
         return { statusCode: 200, body: JSON.stringify({ message: 'Student reset successfully!' }) };
       }
 
-      // --- NORMAL LOGIC ---
       const { student, week, category, className } = body;
       const categorySet = className === "SL" ? CATEGORIES_CLASS_1 : CATEGORIES_OTHER;
       let points = categorySet[category];
