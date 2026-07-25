@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Student Homework Tracker</title>
+  <title>Mastery SL Tracker</title> <!-- UPDATED TITLE -->
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 p-8 font-sans">
   <div class="max-w-4xl mx-auto">
-    <h1 class="text-3xl font-bold mb-6 text-gray-800">10-Week Homework Tracker</h1>
+    <h1 class="text-3xl font-bold mb-6 text-gray-800">Mastery SL Tracker</h1> <!-- UPDATED TITLE -->
     
     <!-- CLASS SELECTOR -->
     <div class="mb-6 bg-white p-4 rounded-lg shadow-md flex items-center gap-4">
@@ -72,18 +72,32 @@
       "Book Review Winner", 
       "Book Review Runner Up", 
       "Book Review Test Highest Scores",
-      "Best behaviour (Maths)", // NEW
-      "Best behaviour (English)" // NEW
+      "Best behaviour (Maths)", 
+      "Best behaviour (English)" 
     ];
-    const NEGATIVE_C1 = ["Forgotten stationery", "Forgot Writing Homework Folder", "No Maths Homework", "No Writing Homework", "No highlighting", "Book Review Test Fail"];
+    const NEGATIVE_C1 = [
+      "Forgotten stationery", 
+      "Forgot Writing Homework Folder", 
+      "No Maths Homework", 
+      "No Writing Homework", 
+      "No highlighting", 
+      "Book Review Test Fail",
+      "Incomplete Maths HW" // NEW CATEGORY
+    ];
     
     const POSITIVE_OTHER = [
       "Writing HW Winner", 
       "Maths HW Winner",
-      "Best behaviour (Maths)", // NEW
-      "Best behaviour (English)" // NEW
+      "Best behaviour (Maths)", 
+      "Best behaviour (English)" 
     ];
-    const NEGATIVE_OTHER = ["Non-submission of writing HW", "Non-submission of maths HW", "Forgetting stationery", "Poor HW quality"];
+    const NEGATIVE_OTHER = [
+      "Non-submission of writing HW", 
+      "Non-submission of maths HW", 
+      "Forgetting stationery", 
+      "Poor HW quality",
+      "Incomplete Maths HW" // NEW CATEGORY
+    ];
 
     function renderCategories() {
       const catSelect = document.getElementById('category');
