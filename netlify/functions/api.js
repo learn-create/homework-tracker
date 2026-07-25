@@ -14,8 +14,9 @@ const CATEGORIES_CLASS_1 = {
   "No Maths Homework": -1,
   "No Writing Homework": -1,
   "No highlighting": 0,
-  "Best behaviour (Maths)": 1,   // NEW
-  "Best behaviour (English)": 1  // NEW
+  "Best behaviour (Maths)": 1,
+  "Best behaviour (English)": 1,
+  "Incomplete Maths HW": -0.5 // NEW CATEGORY
 };
 
 // CATEGORIES FOR MASTERY A & MASTERY B
@@ -26,8 +27,9 @@ const CATEGORIES_OTHER = {
   "Non-submission of maths HW": -1,
   "Forgetting stationery": 0,
   "Poor HW quality": 0,
-  "Best behaviour (Maths)": 1,   // NEW
-  "Best behaviour (English)": 1  // NEW
+  "Best behaviour (Maths)": 1,
+  "Best behaviour (English)": 1,
+  "Incomplete Maths HW": -0.5 // NEW CATEGORY
 };
 
 const AUTO_TRACKED = [
