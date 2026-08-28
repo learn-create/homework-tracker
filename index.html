@@ -6,264 +6,524 @@
   <title>Mastery SL Tracker</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 p-8 font-sans">
-  <div class="max-w-4xl mx-auto">
-    <h1 class="text-3xl font-bold mb-6 text-gray-800">Mastery SL Tracker</h1>
-    
-    <!-- CLASS SELECTOR -->
-    <div class="mb-6 bg-white p-4 rounded-lg shadow-md flex items-center gap-4">
-      <label class="font-semibold text-gray-700">Select Class:</label>
-      <select id="classSelector" class="border border-gray-300 rounded-md p-2 bg-white">
-        <option value="SL">SL</option>
-        <option value="Mastery A">Mastery A</option>
-        <option value="Mastery B">Mastery B</option>
-      </select>
+<body class="min-h-screen bg-slate-100 px-4 py-6 font-sans text-slate-900 md:p-8">
+  <main class="mx-auto max-w-5xl">
+    <header class="mb-6">
+      <p class="mb-1 text-sm font-semibold uppercase tracking-wider text-blue-600">Homework & behaviour</p>
+      <h1 class="text-3xl font-bold tracking-tight text-slate-900">Mastery SL Tracker</h1>
+    </header>
+
+    <section class="mb-6 rounded-xl border border-slate-200 bg-white p-2 shadow-sm" aria-label="Select class">
+      <div id="classTabs" class="grid grid-cols-3 gap-2"></div>
+    </section>
+
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
+      <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+        <div class="mb-5 flex items-center justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-semibold">Log event</h2>
+            <p class="mt-1 text-sm text-slate-500">Choose a student, then tap a category.</p>
+          </div>
+          <span id="selectedWeekBadge" class="shrink-0 rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-700"></span>
+        </div>
+
+        <form id="logForm" class="space-y-5">
+          <fieldset>
+            <legend class="mb-2 block text-sm font-semibold text-slate-700">Week</legend>
+            <div id="weekButtons" class="grid grid-cols-5 gap-2 sm:grid-cols-10"></div>
+          </fieldset>
+
+          <div>
+            <label for="student" class="block text-sm font-semibold text-slate-700">Student</label>
+            <div class="relative mt-2">
+              <input
+                id="student"
+                list="studentOptions"
+                autocomplete="off"
+                placeholder="Search or select a student…"
+                required
+                class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-base outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+              >
+              <datalist id="studentOptions"></datalist>
+            </div>
+            <p id="studentError" class="mt-2 hidden text-sm font-medium text-red-600">Please select a student from this class.</p>
+          </div>
+
+          <fieldset>
+            <legend class="mb-2 block text-sm font-semibold text-slate-700">Category</legend>
+            <div id="categoryButtons" class="space-y-4"></div>
+          </fieldset>
+
+          <button
+            id="submitButton"
+            type="submit"
+            disabled
+            class="w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-200 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
+          >
+            Log event
+          </button>
+        </form>
+
+        <div id="formMessage" class="mt-4 hidden rounded-lg border p-3" role="status" aria-live="polite"></div>
+      </section>
+
+      <section class="self-start rounded-xl border border-slate-200 bg-white p-5 shadow-sm md:p-6 lg:sticky lg:top-6">
+        <div class="mb-4 flex items-center justify-between">
+          <div>
+            <h2 class="text-xl font-semibold">Live leaderboard</h2>
+            <p id="leaderboardClass" class="mt-1 text-sm text-slate-500"></p>
+          </div>
+        </div>
+        <div id="leaderboard" class="space-y-2"><p class="text-sm text-slate-500">Loading data…</p></div>
+      </section>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div class="bg-white p-6 rounded-lg shadow-md">
-        <h2 class="text-xl font-semibold mb-4">Log Event</h2>
-        <form id="logForm" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700">Student Name</label>
-            <select id="student" required class="mt-1 block w-full border border-gray-300 rounded-md p-2 bg-white">
-              <option value="" disabled selected>Loading students...</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700">Week</label>
-            <select id="week" class="mt-1 block w-full border border-gray-300 rounded-md p-2">
-              <option value="1">Week 1</option><option value="2">Week 2</option><option value="3">Week 3</option>
-              <option value="4">Week 4</option><option value="5">Week 5</option><option value="6">Week 6</option>
-              <option value="7">Week 7</option><option value="8">Week 8</option><option value="9">Week 9</option>
-              <option value="10">Week 10</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700">Category</label>
-            <select id="category" class="mt-1 block w-full border border-gray-300 rounded-md p-2"></select>
-          </div>
-          <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">Submit Log</button>
-        </form>
-        <div id="formMessage" class="mt-4 text-green-600 font-medium hidden"></div>
+    <section class="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+      <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 class="text-xl font-semibold">Student activity summaries</h2>
+          <p class="mt-1 text-sm text-slate-500">Open a student to view their recent events.</p>
+        </div>
+        <div class="w-full sm:w-72">
+          <label for="summarySearch" class="sr-only">Search student summaries</label>
+          <input
+            id="summarySearch"
+            type="search"
+            placeholder="Search students…"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+          >
+        </div>
       </div>
-      <div class="bg-white p-6 rounded-lg shadow-md">
-        <h2 class="text-xl font-semibold mb-4">Live Leaderboard</h2>
-        <div id="leaderboard" class="space-y-2"><p class="text-gray-500">Loading data...</p></div>
-      </div>
-    </div>
-    
-    <!-- STUDENT SUMMARIES -->
-    <div class="bg-white p-6 rounded-lg shadow-md mt-6">
-      <h2 class="text-xl font-semibold mb-4">Student Activity Summaries</h2>
-      <div id="logs" class="space-y-2 max-h-96 overflow-y-auto"><p class="text-gray-500">Loading data...</p></div>
-    </div>
-  </div>
+      <div id="logs" class="max-h-[32rem] space-y-2 overflow-y-auto pr-1"><p class="text-sm text-slate-500">Loading data…</p></div>
+    </section>
+  </main>
+
   <script>
     const API_URL = '/.netlify/functions/api';
-    let currentClass = "SL";
-    let globalData = null;
-
-    // CATEGORY LISTS FOR FRONTEND
+    const CLASSES = ['SL', 'Mastery A', 'Mastery B'];
     const POSITIVE_C1 = [
-      "Maths Homework Winner", 
-      "Maths Homework Runner Ups", 
-      "Writing Homework Winner", 
-      "Book Review Winner", 
-      "Book Review Runner Up", 
-      "Book Review Test Highest Scores",
-      "Best behaviour (Maths)", 
-      "Best behaviour (English)" 
+      'Maths Homework Winner',
+      'Maths Homework Runner Ups',
+      'Writing Homework Winner',
+      'Book Review Winner',
+      'Book Review Runner Up',
+      'Book Review Test Highest Scores',
+      'Best behaviour (Maths)',
+      'Best behaviour (English)'
     ];
     const NEGATIVE_C1 = [
-      "Forgotten stationery", 
-      "Forgot Writing Homework Folder", 
-      "No Maths Homework", 
-      "No Writing Homework", 
-      "No highlighting", 
-      "Book Review Test Fail",
-      "Incomplete Maths HW",
-      "Forgot Book Review" // NEW CATEGORY
+      'Forgotten stationery',
+      'Forgot Writing Homework Folder',
+      'No Maths Homework',
+      'No Writing Homework',
+      'No highlighting',
+      'Book Review Test Fail',
+      'Incomplete Maths HW',
+      'Forgot Book Review'
     ];
-    
     const POSITIVE_OTHER = [
-      "Writing HW Winner", 
-      "Maths HW Winner",
-      "Best behaviour (Maths)", 
-      "Best behaviour (English)" 
+      'Writing HW Winner',
+      'Maths HW Winner',
+      'Best behaviour (Maths)',
+      'Best behaviour (English)'
     ];
     const NEGATIVE_OTHER = [
-      "Non-submission of writing HW", 
-      "Non-submission of maths HW", 
-      "Forgetting stationery", 
-      "Poor HW quality",
-      "Incomplete Maths HW",
-      "Forgot Book Review" // NEW CATEGORY
+      'Non-submission of writing HW',
+      'Non-submission of maths HW',
+      'Forgetting stationery',
+      'Poor HW quality',
+      'Incomplete Maths HW',
+      'Forgot Book Review'
     ];
 
-    function renderCategories() {
-      const catSelect = document.getElementById('category');
-      let pos = currentClass === "SL" ? POSITIVE_C1 : POSITIVE_OTHER;
-      let neg = currentClass === "SL" ? NEGATIVE_C1 : NEGATIVE_OTHER;
+    const savedClass = localStorage.getItem('tracker.class');
+    const savedWeek = localStorage.getItem('tracker.week');
+    let currentClass = CLASSES.includes(savedClass) ? savedClass : 'SL';
+    let currentWeek = /^([1-9]|10)$/.test(savedWeek || '') ? savedWeek : '1';
+    let selectedCategory = '';
+    let globalData = null;
+    let isSubmitting = false;
+    let lastLoggedEvent = null;
+    let summaryQuery = '';
 
-      let html = '<optgroup label="Positive">';
-      pos.forEach(c => html += `<option value="${c}">🎉 ${c}</option>`);
-      html += '</optgroup><optgroup label="Negative">';
-      neg.forEach(c => html += `<option value="${c}">😭 ${c}</option>`);
-      html += '</optgroup>';
-      
-      catSelect.innerHTML = html;
+    const classTabs = document.getElementById('classTabs');
+    const weekButtons = document.getElementById('weekButtons');
+    const categoryButtons = document.getElementById('categoryButtons');
+    const studentInput = document.getElementById('student');
+    const studentOptions = document.getElementById('studentOptions');
+    const studentError = document.getElementById('studentError');
+    const submitButton = document.getElementById('submitButton');
+    const formMessage = document.getElementById('formMessage');
+
+    function escapeHTML(value) {
+      return String(value ?? '').replace(/[&<>'"]/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+      })[character]);
     }
 
-    function renderUI() {
-      if (!globalData) return;
-      
-      // Populate Students
-      const studentSelect = document.getElementById('student');
-      const currentVal = studentSelect.value;
-      studentSelect.innerHTML = '<option value="" disabled selected>Select a student...</option>' + 
-        (globalData.students[currentClass] || []).map(name => `<option value="${name}">${name}</option>`).join('');
-      if(currentVal) studentSelect.value = currentVal;
+    function renderClassTabs() {
+      classTabs.innerHTML = CLASSES.map(className => {
+        const active = className === currentClass;
+        return `
+          <button
+            type="button"
+            data-class="${escapeHTML(className)}"
+            aria-selected="${active}"
+            class="rounded-lg px-3 py-3 text-sm font-semibold transition focus:outline-none focus:ring-4 focus:ring-blue-100 ${active ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'}"
+          >${escapeHTML(className)}</button>`;
+      }).join('');
+    }
 
-      // Leaderboard
-      const leaderboardEl = document.getElementById('leaderboard');
-      const classTotals = globalData.totals[currentClass] || {};
-      
-      // SORT: First by Score (descending), then by Name (alphabetically)
-      const sortedTotals = Object.entries(classTotals).sort((a, b) => {
-        if (parseFloat(b[1]) !== parseFloat(a[1])) {
-          return parseFloat(b[1]) - parseFloat(a[1]);
-        }
-        return a[0].localeCompare(b[0]);
-      });
-      
-      if (sortedTotals.length === 0) { 
-        leaderboardEl.innerHTML = '<p class="text-gray-500">No data yet for this class.</p>'; 
+    function renderWeekButtons() {
+      weekButtons.innerHTML = Array.from({ length: 10 }, (_, index) => String(index + 1)).map(week => {
+        const active = week === currentWeek;
+        return `
+          <button
+            type="button"
+            data-week="${week}"
+            aria-pressed="${active}"
+            aria-label="Week ${week}"
+            class="aspect-square rounded-lg border text-sm font-semibold transition focus:outline-none focus:ring-4 focus:ring-blue-100 ${active ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:bg-blue-50'}"
+          >${week}</button>`;
+      }).join('');
+      document.getElementById('selectedWeekBadge').textContent = `Week ${currentWeek}`;
+    }
+
+    function renderCategoryGroup(label, categories, type) {
+      const positive = type === 'positive';
+      const headingClass = positive ? 'text-emerald-700' : 'text-rose-700';
+      const buttonBase = positive
+        ? 'border-emerald-200 bg-emerald-50 text-emerald-900 hover:border-emerald-400 hover:bg-emerald-100'
+        : 'border-rose-200 bg-rose-50 text-rose-900 hover:border-rose-400 hover:bg-rose-100';
+      const selectedClass = positive
+        ? 'border-emerald-600 bg-emerald-100 ring-2 ring-emerald-500 ring-offset-1'
+        : 'border-rose-600 bg-rose-100 ring-2 ring-rose-500 ring-offset-1';
+
+      return `
+        <div>
+          <p class="mb-2 text-xs font-bold uppercase tracking-wider ${headingClass}">${label}</p>
+          <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            ${categories.map(category => `
+              <button
+                type="button"
+                data-category="${encodeURIComponent(category)}"
+                aria-pressed="${selectedCategory === category}"
+                class="min-h-12 rounded-lg border px-3 py-2 text-left text-sm font-medium leading-snug transition focus:outline-none focus:ring-4 focus:ring-blue-100 ${selectedCategory === category ? selectedClass : buttonBase}"
+              >${positive ? '<span aria-hidden="true">＋</span>' : '<span aria-hidden="true">−</span>'} ${escapeHTML(category)}</button>
+            `).join('')}
+          </div>
+        </div>`;
+    }
+
+    function renderCategories() {
+      const positive = currentClass === 'SL' ? POSITIVE_C1 : POSITIVE_OTHER;
+      const negative = currentClass === 'SL' ? NEGATIVE_C1 : NEGATIVE_OTHER;
+      categoryButtons.innerHTML = renderCategoryGroup('Positive', positive, 'positive') + renderCategoryGroup('Negative', negative, 'negative');
+      updateSubmitState();
+    }
+
+    function getCurrentStudents() {
+      return globalData?.students?.[currentClass] || [];
+    }
+
+    function isValidStudent(name) {
+      return getCurrentStudents().includes(name.trim());
+    }
+
+    function updateSubmitState() {
+      const valid = isValidStudent(studentInput.value) && Boolean(selectedCategory) && !isSubmitting;
+      submitButton.disabled = !valid;
+      submitButton.textContent = isSubmitting ? 'Saving…' : 'Log event';
+      if (studentInput.value && !isValidStudent(studentInput.value)) {
+        studentError.classList.remove('hidden');
       } else {
-        leaderboardEl.innerHTML = sortedTotals.map(([student, points], index) => {
-          const numPoints = parseFloat(points);
-          let alertBadge = '';
-          let bgClass = 'bg-gray-50';
-          
-          if (numPoints <= -3) {
-            alertBadge = ` <span class="text-white font-bold text-xs bg-red-600 px-2 py-1 rounded ml-2 animate-pulse">SUSPENSION</span> <button onclick="resetStudent('${student}')" class="ml-2 text-xs bg-gray-800 text-white px-2 py-1 rounded hover:bg-black">Clear to 0</button>`;
-            bgClass = 'bg-red-100 border border-red-300';
-          } else if (numPoints <= -2) {
-            alertBadge = ' <span class="text-white font-bold text-xs bg-orange-500 px-2 py-1 rounded ml-2 animate-pulse">CLOSE TO SUSPENSION</span>';
-            bgClass = 'bg-orange-100 border border-orange-300';
-          }
+        studentError.classList.add('hidden');
+      }
+    }
 
+    function populateStudents() {
+      const students = getCurrentStudents();
+      studentOptions.innerHTML = students.map(name => `<option value="${escapeHTML(name)}"></option>`).join('');
+      if (studentInput.value && !students.includes(studentInput.value)) studentInput.value = '';
+      updateSubmitState();
+    }
+
+    function renderLeaderboard() {
+      const leaderboardEl = document.getElementById('leaderboard');
+      document.getElementById('leaderboardClass').textContent = currentClass;
+      const roster = getCurrentStudents();
+      const totals = globalData?.totals?.[currentClass] || {};
+      const classTotals = Object.fromEntries(roster.map(name => [name, Number(totals[name] || 0)]));
+      Object.entries(totals).forEach(([name, points]) => { classTotals[name] = Number(points || 0); });
+
+      const sortedTotals = Object.entries(classTotals).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+      if (!sortedTotals.length) {
+        leaderboardEl.innerHTML = '<p class="text-sm text-slate-500">No students found for this class.</p>';
+        return;
+      }
+
+      leaderboardEl.innerHTML = sortedTotals.map(([student, points], index) => {
+        let badge = '';
+        let rowClass = 'border-slate-100 bg-slate-50';
+        if (points <= -3) {
+          badge = `<span class="rounded-full bg-red-600 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">Suspension</span>
+            <button type="button" data-reset-student="${encodeURIComponent(student)}" class="rounded-md bg-slate-800 px-2 py-1 text-xs font-semibold text-white hover:bg-slate-950">Clear to 0</button>`;
+          rowClass = 'border-red-200 bg-red-50';
+        } else if (points <= -2) {
+          badge = '<span class="rounded-full bg-orange-500 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">Close to suspension</span>';
+          rowClass = 'border-orange-200 bg-orange-50';
+        }
+
+        return `
+          <div class="rounded-lg border p-3 ${rowClass}">
+            <div class="flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="font-medium text-slate-800"><span class="mr-2 text-xs text-slate-400">${index + 1}</span>${escapeHTML(student)}</span>
+                  ${badge}
+                </div>
+              </div>
+              <span class="shrink-0 text-lg font-bold ${points < 0 ? 'text-red-600' : points > 0 ? 'text-emerald-600' : 'text-slate-500'}">${points}</span>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function renderLogs() {
+      const logsEl = document.getElementById('logs');
+      const classLogs = (globalData?.logs || []).filter(log => log[1] === currentClass);
+      if (!classLogs.length) {
+        logsEl.innerHTML = '<p class="text-sm text-slate-500">No logs yet for this class.</p>';
+        return;
+      }
+
+      const groupedLogs = {};
+      classLogs.forEach(log => {
+        const student = log[2];
+        if (!groupedLogs[student]) groupedLogs[student] = [];
+        groupedLogs[student].push(log);
+      });
+
+      const matchingStudents = Object.keys(groupedLogs)
+        .filter(student => student.toLowerCase().includes(summaryQuery))
+        .sort((a, b) => a.localeCompare(b));
+
+      if (!matchingStudents.length) {
+        logsEl.innerHTML = '<p class="text-sm text-slate-500">No matching students.</p>';
+        return;
+      }
+
+      const totals = globalData?.totals?.[currentClass] || {};
+      logsEl.innerHTML = matchingStudents.map(student => {
+        const studentTotal = Number(totals[student] || 0);
+        const items = [...groupedLogs[student]].reverse().map(log => {
+          const [, , , week, category, points] = log;
+          const numericPoints = Number(points || 0);
+          const colour = numericPoints < 0 ? 'text-red-600' : numericPoints > 0 ? 'text-emerald-600' : 'text-slate-500';
           return `
-            <div class="flex justify-between items-center p-2 rounded ${bgClass}">
-              <span class="font-medium text-gray-800">${index + 1}. ${student}${alertBadge}</span>
-              <span class="font-bold ${numPoints < 0 ? 'text-red-600' : 'text-green-600'} text-lg">${numPoints}</span>
+            <div class="flex items-start justify-between gap-4 border-b border-slate-100 py-2 text-sm last:border-0">
+              <div class="min-w-0">
+                <span class="text-slate-700">${escapeHTML(category)}</span>
+                <span class="ml-1 text-xs text-slate-400">Wk ${escapeHTML(week)}</span>
+              </div>
+              <span class="shrink-0 font-semibold ${colour}">${numericPoints > 0 ? '+' : ''}${numericPoints}</span>
             </div>`;
         }).join('');
-      }
 
-      // Student Summary Dropdowns
-      const logsEl = document.getElementById('logs');
-      const classLogs = globalData.logs.filter(log => log[1] === currentClass);
-      
-      if (classLogs.length === 0) { 
-        logsEl.innerHTML = '<p class="text-gray-500">No logs yet for this class.</p>'; 
-      } else {
-        // Group logs by student
-        const studentLogs = {};
-        classLogs.forEach(log => {
-          const student = log[2];
-          if (!studentLogs[student]) studentLogs[student] = [];
-          studentLogs[student].push(log);
-        });
+        return `
+          <details class="group rounded-lg border border-slate-200 bg-slate-50 p-3 transition hover:border-slate-300 hover:bg-slate-100">
+            <summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-medium text-slate-800">
+              <span>${escapeHTML(student)}</span>
+              <span class="flex items-center gap-3">
+                <span class="font-bold ${studentTotal < 0 ? 'text-red-600' : studentTotal > 0 ? 'text-emerald-600' : 'text-slate-500'}">${studentTotal} pts</span>
+                <span class="text-slate-400 transition group-open:rotate-180" aria-hidden="true">⌄</span>
+              </span>
+            </summary>
+            <div class="ml-2 mt-3 border-l-2 border-slate-200 pl-4">${items}</div>
+          </details>`;
+      }).join('');
+    }
 
-        // Get students sorted alphabetically
-        const sortedStudents = Object.keys(studentLogs).sort((a, b) => a.localeCompare(b));
+    function renderData() {
+      if (!globalData) return;
+      populateStudents();
+      renderLeaderboard();
+      renderLogs();
+    }
 
-        logsEl.innerHTML = sortedStudents.map(student => {
-          const logs = studentLogs[student];
-          const studentTotal = classTotals[student] ? parseFloat(classTotals[student]) : 0;
-          
-          const logItems = logs.reverse().map(log => {
-            const [ts, className, studentName, week, category, points] = log;
-            const pts = parseFloat(points);
-            const colorClass = pts < 0 ? 'text-red-500' : 'text-green-600';
-            const emoji = pts < 0 ? '😭' : (pts === 0 ? '😐' : '🎉');
-            return `
-              <div class="flex justify-between text-sm py-1 border-b border-gray-100 last:border-0">
-                <div>${emoji} ${category} <span class="text-xs text-gray-400">(Wk ${week})</span></div>
-                <div class="${colorClass} font-semibold">${pts > 0 ? '+' : ''}${points}</div>
-              </div>`;
-          }).join('');
-
-          return `
-            <details class="bg-gray-50 p-3 rounded mb-2 cursor-pointer hover:bg-gray-100 transition-colors">
-              <summary class="font-medium text-gray-800 flex justify-between items-center list-none">
-                <span>${student}</span>
-                <span class="font-bold ${studentTotal < 0 ? 'text-red-600' : 'text-green-600'}">${studentTotal} pts</span>
-              </summary>
-              <div class="mt-2 pl-4 border-l-2 border-gray-200 ml-2">
-                ${logItems}
-              </div>
-            </details>`;
-        }).join('');
+    async function fetchData({ initial = false } = {}) {
+      try {
+        const response = await fetch(API_URL, { cache: 'no-store' });
+        if (!response.ok) throw new Error('Unable to load tracker data.');
+        globalData = await response.json();
+        renderData();
+      } catch (error) {
+        if (initial || !globalData) {
+          document.getElementById('leaderboard').innerHTML = '<p class="text-sm font-medium text-red-600">Could not load data. Try refreshing the page.</p>';
+          document.getElementById('logs').innerHTML = '<p class="text-sm font-medium text-red-600">Could not load data. Try refreshing the page.</p>';
+        }
       }
     }
 
-    async function fetchData() {
+    function showFeedback(message, type = 'success', actions = '') {
+      formMessage.className = `mt-4 rounded-lg border p-3 ${type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : type === 'error' ? 'border-red-200 bg-red-50 text-red-900' : 'border-blue-200 bg-blue-50 text-blue-900'}`;
+      formMessage.innerHTML = `<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p class="text-sm font-medium">${escapeHTML(message)}</p>${actions}</div>`;
+      formMessage.classList.remove('hidden');
+    }
+
+    function showLoggedFeedback(event) {
+      const points = Number(event.points || 0);
+      const pointsLabel = `${points > 0 ? '+' : ''}${points}`;
+      showFeedback(
+        `${pointsLabel} ${event.category} added for ${event.student}.`,
+        'success',
+        `<div class="flex flex-wrap gap-2">
+          <button type="button" data-feedback-action="undo" class="rounded-md border border-emerald-300 bg-white px-3 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100">Undo</button>
+          <button type="button" data-feedback-action="same" class="rounded-md bg-emerald-700 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-800">Same student</button>
+          <button type="button" data-feedback-action="next" class="rounded-md bg-slate-800 px-3 py-1.5 text-xs font-bold text-white hover:bg-slate-950">Next student</button>
+        </div>`
+      );
+    }
+
+    function focusCategories() {
+      categoryButtons.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      categoryButtons.querySelector('button')?.focus({ preventScroll: true });
+    }
+
+    function selectNextStudent() {
+      const students = getCurrentStudents();
+      if (!students.length) return;
+      const currentIndex = students.indexOf(studentInput.value);
+      studentInput.value = students[(currentIndex + 1 + students.length) % students.length];
+      updateSubmitState();
+      focusCategories();
+    }
+
+    async function undoLastEvent() {
+      if (!lastLoggedEvent?.id) return;
+      const undoButton = formMessage.querySelector('[data-feedback-action="undo"]');
+      if (undoButton) {
+        undoButton.disabled = true;
+        undoButton.textContent = 'Undoing…';
+      }
+
       try {
-        const res = await fetch(API_URL);
-        globalData = await res.json();
-        renderUI();
-      } catch (error) { console.error('Error fetching data:', error); }
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'undo', eventId: lastLoggedEvent.id })
+        });
+        if (!response.ok) throw new Error('Undo failed.');
+        lastLoggedEvent = null;
+        showFeedback('Entry undone.', 'info');
+        await fetchData();
+      } catch (error) {
+        showFeedback('Could not undo that entry. Please try again.', 'error');
+      }
     }
 
     async function resetStudent(student) {
-      if(confirm(`Are you sure you want to reset ${student}'s score to 0 in ${currentClass}?`)) {
-        try {
-          await fetch(API_URL, { 
-            method: 'POST', 
-            body: JSON.stringify({ action: 'reset', student: student, className: currentClass }), 
-            headers: { 'Content-Type': 'application/json' } 
-          });
-          fetchData(); 
-        } catch (error) { alert('Error resetting student.'); }
+      if (!confirm(`Are you sure you want to reset ${student}'s score to 0 in ${currentClass}?`)) return;
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'reset', student, className: currentClass })
+        });
+        if (!response.ok) throw new Error('Reset failed.');
+        await fetchData();
+      } catch (error) {
+        showFeedback('Could not reset that student. Please try again.', 'error');
       }
     }
 
-    // Class Selector Listener
-    document.getElementById('classSelector').addEventListener('change', (e) => {
-      currentClass = e.target.value;
+    classTabs.addEventListener('click', event => {
+      const button = event.target.closest('[data-class]');
+      if (!button || button.dataset.class === currentClass) return;
+      currentClass = button.dataset.class;
+      localStorage.setItem('tracker.class', currentClass);
+      selectedCategory = '';
+      formMessage.classList.add('hidden');
+      renderClassTabs();
       renderCategories();
-      renderUI();
+      renderData();
     });
 
-    document.getElementById('logForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const student = document.getElementById('student').value;
-      const week = document.getElementById('week').value;
-      const category = document.getElementById('category').value;
-      const messageEl = document.getElementById('formMessage');
+    weekButtons.addEventListener('click', event => {
+      const button = event.target.closest('[data-week]');
+      if (!button) return;
+      currentWeek = button.dataset.week;
+      localStorage.setItem('tracker.week', currentWeek);
+      renderWeekButtons();
+    });
+
+    categoryButtons.addEventListener('click', event => {
+      const button = event.target.closest('[data-category]');
+      if (!button) return;
+      selectedCategory = decodeURIComponent(button.dataset.category);
+      renderCategories();
+    });
+
+    studentInput.addEventListener('input', updateSubmitState);
+    studentInput.addEventListener('change', updateSubmitState);
+
+    document.getElementById('summarySearch').addEventListener('input', event => {
+      summaryQuery = event.target.value.trim().toLowerCase();
+      renderLogs();
+    });
+
+    document.getElementById('leaderboard').addEventListener('click', event => {
+      const button = event.target.closest('[data-reset-student]');
+      if (button) resetStudent(decodeURIComponent(button.dataset.resetStudent));
+    });
+
+    formMessage.addEventListener('click', event => {
+      const action = event.target.closest('[data-feedback-action]')?.dataset.feedbackAction;
+      if (action === 'undo') undoLastEvent();
+      if (action === 'same') focusCategories();
+      if (action === 'next') selectNextStudent();
+    });
+
+    document.getElementById('logForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      const student = studentInput.value.trim();
+      if (!isValidStudent(student) || !selectedCategory || isSubmitting) {
+        updateSubmitState();
+        return;
+      }
+
+      isSubmitting = true;
+      updateSubmitState();
+      const category = selectedCategory;
+
       try {
-        const res = await fetch(API_URL, { 
-          method: 'POST', 
-          body: JSON.stringify({ student, week, category, className: currentClass }), 
-          headers: { 'Content-Type': 'application/json' } 
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ student, week: currentWeek, category, className: currentClass })
         });
-        if (res.ok) {
-          messageEl.textContent = 'Log added successfully!';
-          messageEl.classList.remove('hidden');
-          document.getElementById('logForm').reset();
-          renderCategories(); 
-          fetchData(); 
-          setTimeout(() => messageEl.classList.add('hidden'), 3000);
-        }
-      } catch (error) { messageEl.textContent = 'Error adding log.'; messageEl.classList.remove('hidden'); }
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Unable to save entry.');
+
+        lastLoggedEvent = result.event;
+        selectedCategory = '';
+        renderCategories();
+        showLoggedFeedback(result.event);
+        await fetchData();
+      } catch (error) {
+        showFeedback('Could not add the event. Please try again.', 'error');
+      } finally {
+        isSubmitting = false;
+        updateSubmitState();
+      }
     });
 
-    // Initial Load
+    window.addEventListener('focus', () => fetchData());
+
+    renderClassTabs();
+    renderWeekButtons();
     renderCategories();
-    fetchData();
-    setInterval(fetchData, 10000);
+    fetchData({ initial: true });
   </script>
 </body>
 </html>
