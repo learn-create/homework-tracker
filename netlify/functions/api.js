@@ -1,4 +1,5 @@
 const { google } = require('googleapis');
+const { randomUUID } = require('crypto');
 
 // Categories for SL
 const CATEGORIES_CLASS_1 = {
@@ -52,12 +53,14 @@ exports.handler = async (event) => {
 
   try {
     if (event.httpMethod === 'GET') {
-      const response = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'Sheet1!A2:F' });
+      const response = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'Sheet1!A2:G' });
       const rows = response.data.values || [];
-      
-      const s1 = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'Students1!A2:A' });
-      const s2 = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'Students2!A2:A' });
-      const s3 = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'Students3!A2:A' });
+
+      const [s1, s2, s3] = await Promise.all([
+        sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'Students1!A2:A' }),
+        sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'Students2!A2:A' }),
+        sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'Students3!A2:A' })
+      ]);
 
       const students = {
         "SL": (s1.data.values || []).flat(),
@@ -79,10 +82,30 @@ exports.handler = async (event) => {
 
     if (event.httpMethod === 'POST') {
       const body = JSON.parse(event.body);
-      
+
+      if (body.action === 'undo') {
+        const historyResponse = await sheets.spreadsheets.values.get({
+          spreadsheetId: sheetId,
+          range: 'Sheet1!A2:G'
+        });
+        const historyRows = historyResponse.data.values || [];
+        const rowIndex = historyRows.findIndex(row => row[6] === body.eventId);
+
+        if (rowIndex === -1) {
+          return { statusCode: 404, body: JSON.stringify({ error: 'Entry not found or already undone.' }) };
+        }
+
+        const sheetRow = rowIndex + 2;
+        await sheets.spreadsheets.values.clear({
+          spreadsheetId: sheetId,
+          range: `Sheet1!A${sheetRow}:G${sheetRow}`
+        });
+        return { statusCode: 200, body: JSON.stringify({ message: 'Entry undone successfully!' }) };
+      }
+
       if (body.action === 'reset') {
         const { student, className } = body;
-        const historyResponse = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'Sheet1!A2:F' });
+        const historyResponse = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'Sheet1!A2:G' });
         const historyRows = historyResponse.data.values || [];
         
         let currentTotal = 0;
@@ -92,22 +115,31 @@ exports.handler = async (event) => {
           }
         });
 
-        const offsetPoints = currentTotal * -1; 
+        const offsetPoints = currentTotal * -1;
+        const eventId = randomUUID();
 
         await sheets.spreadsheets.values.append({
-          spreadsheetId: sheetId, range: 'Sheet1!A:F', valueInputOption: 'USER_ENTERED',
-          requestBody: { values: [[new Date().toISOString(), className, student, 'N/A', 'Suspension Served - Reset to 0', offsetPoints]] },
+          spreadsheetId: sheetId, range: 'Sheet1!A:G', valueInputOption: 'USER_ENTERED',
+          requestBody: { values: [[new Date().toISOString(), className, student, 'N/A', 'Suspension Served - Reset to 0', offsetPoints, eventId]] },
         });
         return { statusCode: 200, body: JSON.stringify({ message: 'Student reset successfully!' }) };
       }
 
       const { student, week, category, className } = body;
+      if (!student || !/^([1-9]|10)$/.test(String(week)) || !['SL', 'Mastery A', 'Mastery B'].includes(className)) {
+        return { statusCode: 400, body: JSON.stringify({ error: 'Invalid student, class, or week.' }) };
+      }
+
       const categorySet = className === "SL" ? CATEGORIES_CLASS_1 : CATEGORIES_OTHER;
+      if (!Object.prototype.hasOwnProperty.call(categorySet, category)) {
+        return { statusCode: 400, body: JSON.stringify({ error: 'Invalid category.' }) };
+      }
+
       let points = categorySet[category];
       let finalCategoryName = category;
 
       if (AUTO_TRACKED.includes(category)) {
-        const historyResponse = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'Sheet1!A2:F' });
+        const historyResponse = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'Sheet1!A2:G' });
         const historyRows = historyResponse.data.values || [];
         
         const pastOccurrences = historyRows.filter(row => 
@@ -125,11 +157,19 @@ exports.handler = async (event) => {
         }
       }
 
+      const timestamp = new Date().toISOString();
+      const eventId = randomUUID();
       await sheets.spreadsheets.values.append({
-        spreadsheetId: sheetId, range: 'Sheet1!A:F', valueInputOption: 'USER_ENTERED',
-        requestBody: { values: [[new Date().toISOString(), className, student, week, finalCategoryName, points]] },
+        spreadsheetId: sheetId, range: 'Sheet1!A:G', valueInputOption: 'USER_ENTERED',
+        requestBody: { values: [[timestamp, className, student, week, finalCategoryName, points, eventId]] },
       });
-      return { statusCode: 200, body: JSON.stringify({ message: 'Log added successfully!' }) };
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          message: 'Log added successfully!',
+          event: { id: eventId, timestamp, className, student, week, category: finalCategoryName, points }
+        })
+      };
     }
     return { statusCode: 405, body: 'Method Not Allowed' };
   } catch (error) {
