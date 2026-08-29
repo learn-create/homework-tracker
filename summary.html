@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weekly Class Summary</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-100 px-4 py-6 font-sans text-slate-900 md:p-8">
+  <main class="mx-auto max-w-5xl">
+    <header class="overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-7 text-white shadow-sm md:px-8">
+      <p class="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-blue-100">Mastery SL Tracker</p>
+      <h1 class="text-3xl font-bold tracking-tight md:text-4xl">Weekly Class Summary</h1>
+      <p class="mt-2 text-blue-100">Celebrations, results and reminders from this week.</p>
+    </header>
+
+    <section class="mt-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:p-5" aria-label="Summary controls">
+      <div>
+        <p class="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">Class</p>
+        <div id="classTabs" class="grid grid-cols-3 gap-2"></div>
+      </div>
+      <div class="mt-4">
+        <p class="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">Week</p>
+        <div id="weekButtons" class="grid grid-cols-5 gap-2 sm:grid-cols-10"></div>
+      </div>
+    </section>
+
+    <section class="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" aria-labelledby="summaryHeading">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4 md:px-6">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wide text-blue-600">Class results</p>
+          <h2 id="summaryHeading" class="mt-1 text-xl font-bold text-slate-900"></h2>
+        </div>
+        <button id="refreshButton" type="button" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-100">
+          Refresh
+        </button>
+      </div>
+      <div id="summaryTable" class="p-5 md:p-6" aria-live="polite">
+        <p class="text-sm text-slate-500">Loading weekly results…</p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const API_URL = '/.netlify/functions/api';
+    const CLASSES = ['SL', 'Mastery A', 'Mastery B'];
+    const POSITIVE_C1 = [
+      'Maths Homework Winner',
+      'Maths Homework Runner Ups',
+      'Writing Homework Winner',
+      'Book Review Winner',
+      'Book Review Runner Up',
+      'Book Review Test Highest Scores',
+      'Best behaviour (Maths)',
+      'Best behaviour (English)'
+    ];
+    const NEGATIVE_C1 = [
+      'Forgotten stationery',
+      'Forgot Writing Homework Folder',
+      'No Maths Homework',
+      'No Writing Homework',
+      'No highlighting',
+      'Book Review Test Fail',
+      'Incomplete Maths HW',
+      'Forgot Book Review'
+    ];
+    const POSITIVE_OTHER = [
+      'Writing HW Winner',
+      'Maths HW Winner',
+      'Best behaviour (Maths)',
+      'Best behaviour (English)'
+    ];
+    const NEGATIVE_OTHER = [
+      'Non-submission of writing HW',
+      'Non-submission of maths HW',
+      'Forgetting stationery',
+      'Poor HW quality',
+      'Incomplete Maths HW',
+      'Forgot Book Review'
+    ];
+
+    const query = new URLSearchParams(window.location.search);
+    const queryClass = query.get('class');
+    const queryWeek = query.get('week');
+    const savedClass = localStorage.getItem('tracker.class');
+    const savedWeek = localStorage.getItem('tracker.week');
+    let currentClass = CLASSES.includes(queryClass)
+      ? queryClass
+      : CLASSES.includes(savedClass) ? savedClass : 'SL';
+    let currentWeek = /^([1-9]|10)$/.test(queryWeek || '')
+      ? queryWeek
+      : /^([1-9]|10)$/.test(savedWeek || '') ? savedWeek : '1';
+    let globalData = null;
+
+    function escapeHTML(value) {
+      return String(value ?? '').replace(/[&<>'"]/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+      })[character]);
+    }
+
+    function syncSelection() {
+      localStorage.setItem('tracker.class', currentClass);
+      localStorage.setItem('tracker.week', currentWeek);
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.set('class', currentClass);
+      nextUrl.searchParams.set('week', currentWeek);
+      history.replaceState(null, '', nextUrl);
+    }
+
+    function renderControls() {
+      document.getElementById('classTabs').innerHTML = CLASSES.map(className => {
+        const active = className === currentClass;
+        return `
+          <button type="button" data-class="${escapeHTML(className)}" aria-pressed="${active}"
+            class="rounded-lg px-3 py-3 text-sm font-semibold transition focus:outline-none focus:ring-4 focus:ring-blue-100 ${active ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+            ${escapeHTML(className)}
+          </button>`;
+      }).join('');
+
+      document.getElementById('weekButtons').innerHTML = Array.from({ length: 10 }, (_, index) => String(index + 1)).map(week => {
+        const active = week === currentWeek;
+        return `
+          <button type="button" data-week="${week}" aria-pressed="${active}" aria-label="Week ${week}"
+            class="aspect-square rounded-lg border text-sm font-semibold transition focus:outline-none focus:ring-4 focus:ring-blue-100 ${active ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:bg-blue-50'}">
+            ${week}
+          </button>`;
+      }).join('');
+
+      document.getElementById('summaryHeading').textContent = `${currentClass} · Week ${currentWeek}`;
+    }
+
+    function renderSummary() {
+      const summaryEl = document.getElementById('summaryTable');
+      if (!globalData) return;
+
+      const weeklyLogs = (globalData.logs || []).filter(log =>
+        log[1] === currentClass && String(log[3]) === currentWeek
+      );
+
+      if (!weeklyLogs.length) {
+        summaryEl.innerHTML = `
+          <div class="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center">
+            <p class="font-semibold text-slate-700">No results have been logged for Week ${escapeHTML(currentWeek)}.</p>
+          </div>`;
+        return;
+      }
+
+      const positiveCategories = currentClass === 'SL' ? POSITIVE_C1 : POSITIVE_OTHER;
+      const negativeCategories = currentClass === 'SL' ? NEGATIVE_C1 : NEGATIVE_OTHER;
+      const validCategories = [...positiveCategories, ...negativeCategories];
+      const studentsByCategory = {};
+
+      weeklyLogs.forEach(log => {
+        const category = String(log[4] || '').replace(/ \((first-time|subsequent)\)$/i, '');
+        const student = String(log[2] || '').trim();
+        if (!validCategories.includes(category) || !student) return;
+        if (!studentsByCategory[category]) studentsByCategory[category] = new Set();
+        studentsByCategory[category].add(student);
+      });
+
+      const renderRows = (categories, positive) => categories
+        .filter(category => studentsByCategory[category]?.size)
+        .map(category => {
+          const students = [...studentsByCategory[category]].sort((a, b) => a.localeCompare(b));
+          return `
+            <tr class="border-t border-slate-200 ${positive ? 'bg-emerald-50/60' : 'bg-amber-50/60'}">
+              <th scope="row" class="w-2/5 px-4 py-4 text-left align-top text-sm font-semibold text-slate-800 md:text-base">
+                <span class="mr-2 inline-block size-2 rounded-full ${positive ? 'bg-emerald-500' : 'bg-amber-500'}" aria-hidden="true"></span>${escapeHTML(category)}
+              </th>
+              <td class="px-4 py-4 align-top text-sm font-semibold text-slate-900 md:text-base">${students.map(escapeHTML).join(', ')}</td>
+            </tr>`;
+        }).join('');
+
+      const rows = renderRows(positiveCategories, true) + renderRows(negativeCategories, false);
+      if (!rows) {
+        summaryEl.innerHTML = '<p class="text-center text-sm text-slate-500">No summary categories were logged this week.</p>';
+        return;
+      }
+
+      summaryEl.innerHTML = `
+        <div class="overflow-hidden rounded-lg border border-slate-200">
+          <table class="w-full border-collapse">
+            <thead class="bg-slate-100">
+              <tr>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Weekly result</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Students</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    }
+
+    async function fetchData() {
+      const summaryEl = document.getElementById('summaryTable');
+      const refreshButton = document.getElementById('refreshButton');
+      refreshButton.disabled = true;
+      refreshButton.textContent = 'Refreshing…';
+
+      try {
+        const response = await fetch(API_URL, { cache: 'no-store' });
+        if (!response.ok) throw new Error('Unable to load data.');
+        globalData = await response.json();
+        renderSummary();
+      } catch (error) {
+        summaryEl.innerHTML = '<p class="rounded-lg bg-red-50 p-4 text-sm font-semibold text-red-700">Could not load the weekly summary. Please refresh and try again.</p>';
+      } finally {
+        refreshButton.disabled = false;
+        refreshButton.textContent = 'Refresh';
+      }
+    }
+
+    document.getElementById('classTabs').addEventListener('click', event => {
+      const button = event.target.closest('[data-class]');
+      if (!button) return;
+      currentClass = button.dataset.class;
+      syncSelection();
+      renderControls();
+      renderSummary();
+    });
+
+    document.getElementById('weekButtons').addEventListener('click', event => {
+      const button = event.target.closest('[data-week]');
+      if (!button) return;
+      currentWeek = button.dataset.week;
+      syncSelection();
+      renderControls();
+      renderSummary();
+    });
+
+    document.getElementById('refreshButton').addEventListener('click', fetchData);
+    window.addEventListener('focus', fetchData);
+
+    syncSelection();
+    renderControls();
+    fetchData();
+  </script>
+</body>
+</html>
